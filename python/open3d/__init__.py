@@ -92,6 +92,7 @@ if __DEVICE_API__ == 'cpu':
 
 import open3d.core
 import open3d.visualization
+import open3d.data
 
 __version__ = "@PROJECT_VERSION@"
 
