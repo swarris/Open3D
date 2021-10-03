@@ -411,6 +411,14 @@ public:
     /// Convert to a legacy Open3D TriangleMesh.
     open3d::geometry::TriangleMesh ToLegacy() const;
 
+    /// \brief Function to compute triangle normals, usually called before
+    /// rendering.
+    TriangleMesh &ComputeTriangleNormals(bool normalized = true);
+
+    /// \brief Function to compute vertex normals, usually called before
+    /// rendering.
+    TriangleMesh &ComputeVertexNormals(bool normalized = true);
+
 protected:
     core::Device device_ = core::Device("CPU:0");
     TensorMap vertex_attr_;

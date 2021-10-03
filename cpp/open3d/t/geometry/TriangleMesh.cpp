@@ -245,6 +245,14 @@ TriangleMesh TriangleMesh::To(const core::Device &device, bool copy) const {
     return mesh;
 }
 
+TriangleMesh &TriangleMesh::ComputeTriangleNormals(bool normalized) {
+    utility::LogError("Unimplemented");
+}
+
+TriangleMesh &TriangleMesh::ComputeVertexNormals(bool normalized) {
+    utility::LogError("Unimplemented");
+}
+
 }  // namespace geometry
 }  // namespace t
 }  // namespace open3d
