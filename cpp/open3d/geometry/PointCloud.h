@@ -95,6 +95,23 @@ public:
         return points_.size() > 0 && colors_.size() == points_.size();
     }
 
+    /// Returns `true` if the point cloud contains nir data.
+    bool HasNIR() const {
+        return nir_.size() > 0 && nir_.size() == points_.size();
+    }
+
+    /// Returns `true` if the point cloud contains nir data.
+    bool HasNDVI() const {
+        return ndvi_.size() > 0 && ndvi_.size() == points_.size();
+    }
+
+    /// Returns `true` if the point cloud contains intensity data.
+    bool HasIntensity() const {
+        return intensity_.size() > 0 && intensity_.size() == points_.size();
+    }
+
+
+
     /// Returns 'true' if the point cloud contains per-point covariance matrix.
     bool HasCovariances() const {
         return !points_.empty() && covariances_.size() == points_.size();
@@ -416,6 +433,11 @@ public:
     std::vector<Eigen::Vector3d> colors_;
     /// Covariance Matrix for each point
     std::vector<Eigen::Matrix3d> covariances_;
+    /// NPEC Additions
+    std::vector<Eigen::Vector3d> nir_;
+    std::vector<Eigen::Vector3d> ndvi_;
+    std::vector<Eigen::Vector3d> intensity_;
+
 };
 
 }  // namespace geometry

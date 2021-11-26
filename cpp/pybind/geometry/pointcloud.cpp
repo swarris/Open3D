@@ -67,7 +67,13 @@ void pybind_pointcloud(py::module &m) {
                  "Returns ``True`` if the point cloud contains covariances.")
             .def("normalize_normals", &PointCloud::NormalizeNormals,
                  "Normalize point normals to length 1.")
-            .def("paint_uniform_color", &PointCloud::PaintUniformColor,
+			.def("has_nir", &PointCloud::HasNIR,
+					"Returns ``True`` if the point cloud contains near-infrared values.")
+			.def("has_ndvi", &PointCloud::HasNDVI,
+					"Returns ``True`` if the point cloud contains ndvi values.")
+			.def("has_intensity", &PointCloud::HasIntensity,
+					"Returns ``True`` if the point cloud contains intensity values.")
+			.def("paint_uniform_color", &PointCloud::PaintUniformColor,
                  "color"_a,
                  "Assigns each point in the PointCloud the same color.")
             .def("select_by_index", &PointCloud::SelectByIndex,
@@ -229,7 +235,24 @@ camera. Given depth value d at (u, v) image coordinate, the corresponding 3d poi
                     "``float64`` array of shape ``(num_points, 3)``, "
                     "range ``[0, 1]`` , use ``numpy.asarray()`` to access "
                     "data: RGB colors of points.")
-            .def_readwrite("covariances", &PointCloud::covariances_,
+
+            .def_readwrite(
+            		"nir", &PointCloud::nir_,
+					"``float64`` array of shape ``(num_points, 3)``, "
+					"range ``[0, 1]`` , use ``numpy.asarray()`` to access "
+					"data: RGB nir of points (uses only Red channel).")
+			.def_readwrite(
+					"ndvi", &PointCloud::ndvi_,
+					"``float64`` array of shape ``(num_points, 3)``, "
+					"range ``[0, 1]`` , use ``numpy.asarray()`` to access "
+					"data: RGB ndvi of points (uses only Red channel).")
+			.def_readwrite(
+					"intensity", &PointCloud::intensity_,
+					"``float64`` array of shape ``(num_points, 3)``, "
+					"range ``[0, 1]`` , use ``numpy.asarray()`` to access "
+					"data: RGB intensity of points (uses only Red channel).")
+
+			.def_readwrite("covariances", &PointCloud::covariances_,
                            "``float64`` array of shape ``(num_points, 3, 3)``, "
                            "use ``numpy.asarray()`` to access data: Points "
                            "covariances.");
@@ -237,6 +260,9 @@ camera. Given depth value d at (u, v) image coordinate, the corresponding 3d poi
     docstring::ClassMethodDocInject(m, "PointCloud", "has_normals");
     docstring::ClassMethodDocInject(m, "PointCloud", "has_points");
     docstring::ClassMethodDocInject(m, "PointCloud", "normalize_normals");
+    docstring::ClassMethodDocInject(m, "PointCloud", "has_nir");
+    docstring::ClassMethodDocInject(m, "PointCloud", "has_ndvi");
+    docstring::ClassMethodDocInject(m, "PointCloud", "has_intensity");
     docstring::ClassMethodDocInject(
             m, "PointCloud", "paint_uniform_color",
             {{"color", "RGB color for the PointCloud."}});

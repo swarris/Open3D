@@ -53,6 +53,12 @@ struct PLYReaderState {
     long normal_num;
     long color_index;
     long color_num;
+    long nir_index;
+    long nir_num;
+    long ndvi_index;
+    long ndvi_num;
+    long intensity_index;
+    long intensity_num;
 };
 
 int ReadVertexCallback(p_ply_argument argument) {
@@ -110,6 +116,61 @@ int ReadColorCallback(p_ply_argument argument) {
     return 1;
 }
 
+int ReadNIRCallback(p_ply_argument argument) {
+    PLYReaderState *state_ptr;
+    long index;
+    ply_get_argument_user_data(argument, reinterpret_cast<void **>(&state_ptr),
+                               &index);
+    if (state_ptr->nir_index >= state_ptr->nir_num) {
+        return 0;
+    }
+
+    double value = ply_get_argument_value(argument);
+    state_ptr->pointcloud_ptr->nir_[state_ptr->nir_index](index) =
+            value / 255.0;
+    if (index == 0) {  // reading point
+        state_ptr->nir_index++;
+    }
+    return 1;
+}
+
+int ReadNDVICallback(p_ply_argument argument) {
+    PLYReaderState *state_ptr;
+    long index;
+    ply_get_argument_user_data(argument, reinterpret_cast<void **>(&state_ptr),
+                               &index);
+    if (state_ptr->ndvi_index >= state_ptr->ndvi_num) {
+        return 0;
+    }
+
+    double value = ply_get_argument_value(argument);
+    state_ptr->pointcloud_ptr->ndvi_[state_ptr->ndvi_index](index) =
+            value / 255.0;
+    if (index == 0) {  // reading point
+        state_ptr->ndvi_index++;
+    }
+    return 1;
+}
+
+int ReadIntensityCallback(p_ply_argument argument) {
+    PLYReaderState *state_ptr;
+    long index;
+    ply_get_argument_user_data(argument, reinterpret_cast<void **>(&state_ptr),
+                               &index);
+    if (state_ptr->intensity_index >= state_ptr->intensity_num) {
+        return 0;
+    }
+
+    double value = ply_get_argument_value(argument);
+    state_ptr->pointcloud_ptr->intensity_[state_ptr->intensity_index](index) =
+            value / 255.0;
+    if (index == 0) {  // reading point
+        state_ptr->intensity_index++;
+    }
+    return 1;
+}
+
+
 }  // namespace ply_pointcloud_reader
 
 namespace ply_trianglemesh_reader {
@@ -126,6 +187,14 @@ struct PLYReaderState {
     std::vector<unsigned int> face;
     long face_index;
     long face_num;
+
+    long nir_index;
+    long nir_num;
+    long ndvi_index;
+    long ndvi_num;
+    long intensity_index;
+    long intensity_num;
+
 };
 
 int ReadVertexCallback(p_ply_argument argument) {
@@ -224,6 +293,14 @@ struct PLYReaderState {
     long line_num;
     long color_index;
     long color_num;
+
+    long nir_index;
+    long nir_num;
+    long ndvi_index;
+    long ndvi_num;
+    long intensity_index;
+    long intensity_num;
+
 };
 
 int ReadVertexCallback(p_ply_argument argument) {
@@ -294,6 +371,13 @@ struct PLYReaderState {
     long voxel_num;
     long color_index;
     long color_num;
+    long nir_index;
+    long nir_num;
+    long ndvi_index;
+    long ndvi_num;
+    long intensity_index;
+    long intensity_num;
+
 };
 
 int ReadOriginCallback(p_ply_argument argument) {
@@ -428,6 +512,13 @@ bool ReadPointCloudFromPLY(const std::string &filename,
     ply_set_read_cb(ply_file, "vertex", "green", ReadColorCallback, &state, 1);
     ply_set_read_cb(ply_file, "vertex", "blue", ReadColorCallback, &state, 2);
 
+    state.nir_num = ply_set_read_cb(ply_file, "vertex", "nir",
+                                      ReadNIRCallback, &state, 0);
+    state.ndvi_num = ply_set_read_cb(ply_file, "vertex", "ndvi",
+                                      ReadNDVICallback, &state, 0);
+    state.intensity_num = ply_set_read_cb(ply_file, "vertex", "intensity",
+                                      ReadIntensityCallback, &state, 0);
+
     if (state.vertex_num <= 0) {
         utility::LogWarning("Read PLY failed: number of vertex <= 0.");
         ply_close(ply_file);
@@ -437,11 +528,20 @@ bool ReadPointCloudFromPLY(const std::string &filename,
     state.vertex_index = 0;
     state.normal_index = 0;
     state.color_index = 0;
+    state.nir_index = 0;
+    state.ndvi_index = 0;
+    state.intensity_index = 0;
 
     pointcloud.Clear();
+
     pointcloud.points_.resize(state.vertex_num);
     pointcloud.normals_.resize(state.normal_num);
     pointcloud.colors_.resize(state.color_num);
+
+    pointcloud.nir_.resize(state.nir_num);
+    pointcloud.ndvi_.resize(state.ndvi_num);
+    pointcloud.intensity_.resize(state.intensity_num);
+
 
     utility::CountingProgressReporter reporter(params.update_progress);
     reporter.SetTotal(state.vertex_num);
@@ -902,6 +1002,9 @@ bool ReadVoxelGridFromPLY(const std::string &filename,
 
     state.voxel_index = 0;
     state.color_index = 0;
+    state.nir_index = 0;
+    state.ndvi_index = 0;
+    state.intensity_index = 0;
 
     voxelgrid_ptr.clear();
     voxelgrid_ptr.resize(state.voxel_num);

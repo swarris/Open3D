@@ -48,6 +48,9 @@ PointCloud &PointCloud::Clear() {
     normals_.clear();
     colors_.clear();
     covariances_.clear();
+    nir_.clear();
+    ndvi_.clear();
+    intensity_.clear();
     return *this;
 }
 
@@ -119,6 +122,31 @@ PointCloud &PointCloud::operator+=(const PointCloud &cloud) {
     } else {
         colors_.clear();
     }
+
+    if ((!HasPoints() || HasNIR()) && cloud.HasNIR()) {
+            nir_.resize(new_vert_num);
+            for (size_t i = 0; i < add_vert_num; i++)
+                nir_[old_vert_num + i] = cloud.nir_[i];
+        } else {
+            nir_.clear();
+    }
+
+    if ((!HasPoints() || HasNDVI()) && cloud.HasNDVI()) {
+            ndvi_.resize(new_vert_num);
+            for (size_t i = 0; i < add_vert_num; i++)
+                ndvi_[old_vert_num + i] = cloud.ndvi_[i];
+        } else {
+            ndvi_.clear();
+    }
+    if ((!HasPoints() || HasIntensity()) && cloud.HasIntensity()) {
+            intensity_.resize(new_vert_num);
+            for (size_t i = 0; i < add_vert_num; i++)
+                intensity_[old_vert_num + i] = cloud.intensity_[i];
+        } else {
+            intensity_.clear();
+    }
+
+
     if ((!HasPoints() || HasCovariances()) && cloud.HasCovariances()) {
         covariances_.resize(new_vert_num);
         for (size_t i = 0; i < add_vert_num; i++)
@@ -163,6 +191,11 @@ PointCloud &PointCloud::RemoveNonFinitePoints(bool remove_nan,
     bool has_normal = HasNormals();
     bool has_color = HasColors();
     bool has_covariance = HasCovariances();
+
+    bool has_nir = HasNIR();
+    bool has_ndvi = HasNDVI();
+    bool has_intensity = HasIntensity();
+
     size_t old_point_num = points_.size();
     size_t k = 0;                                 // new index
     for (size_t i = 0; i < old_point_num; i++) {  // old index
@@ -177,6 +210,9 @@ PointCloud &PointCloud::RemoveNonFinitePoints(bool remove_nan,
             if (has_normal) normals_[k] = normals_[i];
             if (has_color) colors_[k] = colors_[i];
             if (has_covariance) covariances_[k] = covariances_[i];
+            if (has_nir) nir_[k] = nir_[i];
+            if (has_ndvi) ndvi_[k] = ndvi_[i];
+            if (has_intensity) intensity_[k] = intensity_[i];
             k++;
         }
     }
@@ -184,6 +220,10 @@ PointCloud &PointCloud::RemoveNonFinitePoints(bool remove_nan,
     if (has_normal) normals_.resize(k);
     if (has_color) colors_.resize(k);
     if (has_covariance) covariances_.resize(k);
+    if (has_nir) nir_.resize(k);
+    if (has_ndvi) ndvi_.resize(k);
+    if (has_intensity) intensity_.resize(k);
+
     utility::LogDebug(
             "[RemoveNonFinitePoints] {:d} nan points have been removed.",
             (int)(old_point_num - k));
@@ -197,6 +237,11 @@ std::shared_ptr<PointCloud> PointCloud::SelectByIndex(
     bool has_colors = HasColors();
     bool has_covariance = HasCovariances();
 
+    bool has_nir = HasNIR();
+    bool has_ndvi = HasNDVI();
+    bool has_intensity = HasIntensity();
+
+
     std::vector<bool> mask = std::vector<bool>(points_.size(), invert);
     for (size_t i : indices) {
         mask[i] = !invert;
@@ -208,6 +253,9 @@ std::shared_ptr<PointCloud> PointCloud::SelectByIndex(
             if (has_normals) output->normals_.push_back(normals_[i]);
             if (has_colors) output->colors_.push_back(colors_[i]);
             if (has_covariance) output->covariances_.push_back(covariances_[i]);
+            if (has_nir) output->nir_.push_back(nir_[i]);
+            if (has_ndvi) output->ndvi_.push_back(ndvi_[i]);
+            if (has_intensity) output->intensity_.push_back(intensity_[i]);
         }
     }
     utility::LogDebug(
@@ -235,6 +283,15 @@ public:
         if (cloud.HasCovariances()) {
             covariance_ += cloud.covariances_[index];
         }
+        if (cloud.HasNIR()) {
+            nir_ += cloud.nir_[index];
+        }
+        if (cloud.HasNDVI()) {
+            ndvi_ += cloud.ndvi_[index];
+        }
+        if (cloud.HasIntensity()) {
+            intensity_ += cloud.intensity_[index];
+        }
         num_of_points_++;
     }
 
@@ -261,6 +318,9 @@ public:
     Eigen::Vector3d normal_ = Eigen::Vector3d::Zero();
     Eigen::Vector3d color_ = Eigen::Vector3d::Zero();
     Eigen::Matrix3d covariance_ = Eigen::Matrix3d::Zero();
+    Eigen::Vector3d nir_= Eigen::Vector3d::Zero();
+    Eigen::Vector3d ndvi_= Eigen::Vector3d::Zero();
+    Eigen::Vector3d intensity_= Eigen::Vector3d::Zero();
 };
 
 class point_cubic_id {
@@ -297,6 +357,42 @@ public:
         if (cloud.HasCovariances()) {
             covariance_ += cloud.covariances_[index];
         }
+
+        if (cloud.HasNIR()) {
+            if (approximate_class) {
+                auto got = classes.find(int(cloud.nir_[index][0]));
+                if (got == classes.end())
+                    classes[int(cloud.nir_[index][0])] = 1;
+                else
+                    classes[int(cloud.nir_[index][0])] += 1;
+            } else {
+                nir_ += cloud.nir_[index];
+            }
+        }
+
+        if (cloud.HasNDVI()) {
+            if (approximate_class) {
+                auto got = classes.find(int(cloud.ndvi_[index][0]));
+                if (got == classes.end())
+                    classes[int(cloud.ndvi_[index][0])] = 1;
+                else
+                    classes[int(cloud.ndvi_[index][0])] += 1;
+            } else {
+                ndvi_ += cloud.ndvi_[index];
+            }
+        }
+        if (cloud.HasIntensity()) {
+            if (approximate_class) {
+                auto got = classes.find(int(cloud.intensity_[index][0]));
+                if (got == classes.end())
+                    classes[int(cloud.intensity_[index][0])] = 1;
+                else
+                    classes[int(cloud.intensity_[index][0])] += 1;
+            } else {
+                intensity_ += cloud.intensity_[index];
+            }
+        }
+
         point_cubic_id new_id;
         new_id.point_id = index;
         new_id.cubic_id = cubic_index;
@@ -354,6 +450,7 @@ std::shared_ptr<PointCloud> PointCloud::VoxelDownSample(
     bool has_normals = HasNormals();
     bool has_colors = HasColors();
     bool has_covariances = HasCovariances();
+
     for (auto accpoint : voxelindex_to_accpoint) {
         output->points_.push_back(accpoint.second.GetAveragePoint());
         if (has_normals) {
