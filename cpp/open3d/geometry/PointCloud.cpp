@@ -51,7 +51,15 @@ PointCloud &PointCloud::Clear() {
     nir_.clear();
     ndvi_.clear();
     intensity_.clear();
+    wvl1_.clear();
+    wvl2_.clear();
+    wvl3_.clear();
+    wvl4_.clear();
     return *this;
+}
+
+void PointCloud::from16b() const {
+	// rescale
 }
 
 bool PointCloud::IsEmpty() const { return !HasPoints(); }

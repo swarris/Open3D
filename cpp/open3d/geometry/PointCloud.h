@@ -117,6 +117,8 @@ public:
         return !points_.empty() && covariances_.size() == points_.size();
     }
 
+    void from16b() const;
+
     /// Normalize point normals to length 1.
     PointCloud &NormalizeNormals() {
         for (size_t i = 0; i < normals_.size(); i++) {
@@ -437,6 +439,10 @@ public:
     std::vector<Eigen::Vector3d> nir_;
     std::vector<Eigen::Vector3d> ndvi_;
     std::vector<Eigen::Vector3d> intensity_;
+    std::vector<Eigen::Vector3d> wvl1_;
+    std::vector<Eigen::Vector3d> wvl2_;
+    std::vector<Eigen::Vector3d> wvl3_;
+    std::vector<Eigen::Vector3d> wvl4_;
 
 };
 
