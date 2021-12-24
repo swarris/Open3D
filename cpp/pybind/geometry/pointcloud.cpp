@@ -73,6 +73,14 @@ void pybind_pointcloud(py::module &m) {
 					"Returns ``True`` if the point cloud contains ndvi values.")
 			.def("has_intensity", &PointCloud::HasIntensity,
 					"Returns ``True`` if the point cloud contains intensity values.")
+			.def("has_wavelengths", &PointCloud::HasWavelengths,
+					"Returns ``True`` if the point cloud contains wavelength values.")
+			.def("wavelengthsToData", &PointCloud::wavelengthsToData,
+					"Converts 16 bit wavelength data to RGB and nir")
+			.def("computeNDVI", &PointCloud::computeNDVI,
+					"Computes NDVI value based on Red and nir.")
+			.def("colorizeNDVI", &PointCloud::colorizeNDVI,
+					"colorizes NDVI value based on Red and nir.")
 			.def("paint_uniform_color", &PointCloud::PaintUniformColor,
                  "color"_a,
                  "Assigns each point in the PointCloud the same color.")
@@ -251,6 +259,11 @@ camera. Given depth value d at (u, v) image coordinate, the corresponding 3d poi
 					"``float64`` array of shape ``(num_points, 3)``, "
 					"range ``[0, 1]`` , use ``numpy.asarray()`` to access "
 					"data: RGB intensity of points (uses only Red channel).")
+			.def_readwrite(
+					"wavelengths", &PointCloud::wavelengths_,
+					"``float64`` array of shape ``(num_points, 4)``, "
+					"range ``[0, 1]`` , use ``numpy.asarray()`` to access "
+					"data: wavelength data in 16 bits (RGB and nir).")
 
 			.def_readwrite("covariances", &PointCloud::covariances_,
                            "``float64`` array of shape ``(num_points, 3, 3)``, "
@@ -263,6 +276,10 @@ camera. Given depth value d at (u, v) image coordinate, the corresponding 3d poi
     docstring::ClassMethodDocInject(m, "PointCloud", "has_nir");
     docstring::ClassMethodDocInject(m, "PointCloud", "has_ndvi");
     docstring::ClassMethodDocInject(m, "PointCloud", "has_intensity");
+    docstring::ClassMethodDocInject(m, "PointCloud", "has_wavelengths");
+    docstring::ClassMethodDocInject(m, "PointCloud", "wavelengthsToData");
+    docstring::ClassMethodDocInject(m, "PointCloud", "computeNDVI");
+    docstring::ClassMethodDocInject(m, "PointCloud", "colorizeNDVI");
     docstring::ClassMethodDocInject(
             m, "PointCloud", "paint_uniform_color",
             {{"color", "RGB color for the PointCloud."}});

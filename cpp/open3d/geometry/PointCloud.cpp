@@ -30,6 +30,8 @@
 #include <algorithm>
 #include <numeric>
 #include <random>
+#include <limits>
+
 
 #include "open3d/geometry/BoundingVolume.h"
 #include "open3d/geometry/KDTreeFlann.h"
@@ -51,16 +53,60 @@ PointCloud &PointCloud::Clear() {
     nir_.clear();
     ndvi_.clear();
     intensity_.clear();
-    wvl1_.clear();
-    wvl2_.clear();
-    wvl3_.clear();
-    wvl4_.clear();
+    wavelengths_.clear();
     return *this;
 }
 
-void PointCloud::from16b() const {
+void PointCloud::wavelengthsToData() {
 	// rescale
+	std::vector<Eigen::Vector4d>scaled = wavelengths_;
+	unsigned long i = 0;
+	for (auto &wvl : scaled){
+		wvl /=  USHRT_MAX;
+		colors_[i].block<3,1>(0,0) = wvl.block(0,0,0,2);
+		nir_[i][0] = wvl[3];
+		i++;
+	}
 }
+
+void PointCloud::computeNDVI() {
+	unsigned long i = 0;
+	for (auto &wvl : wavelengths_){
+		ndvi_[i][0] = ((wvl[3]- wvl[0])/ (wvl[3] + wvl[0]) + 1.0) / 2.0;
+		i++;
+	}
+
+}
+
+void PointCloud::colorizeNDVI() {
+	unsigned long i = 0;
+	double ndvi;
+	double maxNDVI = 0.0;
+	double minNDVI = 1.0;
+	for (auto &wvl : wavelengths_){
+		ndvi = ((wvl[3]- wvl[0])/ (wvl[3] + wvl[0]) + 1.0) / 2.0;
+		ndvi_[i][0] = ndvi;
+		maxNDVI = std::max(ndvi, maxNDVI);
+		minNDVI = std::min(ndvi, minNDVI);
+		i++;
+	}
+	i = 0;
+	for (auto &n : ndvi_){
+		ndvi = (n[0] - minNDVI) / maxNDVI;
+
+		ndvi_[i][0] = std::min(ndvi, 1.0/3.0) * 3.0;
+		if (ndvi >= 1.0/3.0) {
+			ndvi_[i][1] =  std::min(ndvi-(1.0/3.0), 2.0/3.0) * 3.0;
+		}
+		if (ndvi >= 2.0/3.0) {
+			ndvi_[i][2] =  std::min(ndvi-(2.0/3.0), 1.0) * 3.0;
+		}
+		i++;
+	}
+
+}
+
+
 
 bool PointCloud::IsEmpty() const { return !HasPoints(); }
 
@@ -154,6 +200,14 @@ PointCloud &PointCloud::operator+=(const PointCloud &cloud) {
             intensity_.clear();
     }
 
+    if ((!HasPoints() || HasWavelengths()) && cloud.HasWavelengths()) {
+            wavelengths_.resize(new_vert_num);
+            for (size_t i = 0; i < add_vert_num; i++)
+                wavelengths_[old_vert_num + i] = cloud.wavelengths_[i];
+        } else {
+            wavelengths_.clear();
+    }
+
 
     if ((!HasPoints() || HasCovariances()) && cloud.HasCovariances()) {
         covariances_.resize(new_vert_num);
@@ -203,6 +257,7 @@ PointCloud &PointCloud::RemoveNonFinitePoints(bool remove_nan,
     bool has_nir = HasNIR();
     bool has_ndvi = HasNDVI();
     bool has_intensity = HasIntensity();
+    bool has_wavelengths = HasWavelengths();
 
     size_t old_point_num = points_.size();
     size_t k = 0;                                 // new index
@@ -221,6 +276,7 @@ PointCloud &PointCloud::RemoveNonFinitePoints(bool remove_nan,
             if (has_nir) nir_[k] = nir_[i];
             if (has_ndvi) ndvi_[k] = ndvi_[i];
             if (has_intensity) intensity_[k] = intensity_[i];
+            if (has_wavelengths) wavelengths_[k] = wavelengths_[i];
             k++;
         }
     }
@@ -231,6 +287,7 @@ PointCloud &PointCloud::RemoveNonFinitePoints(bool remove_nan,
     if (has_nir) nir_.resize(k);
     if (has_ndvi) ndvi_.resize(k);
     if (has_intensity) intensity_.resize(k);
+    if (has_wavelengths) wavelengths_.resize(k);
 
     utility::LogDebug(
             "[RemoveNonFinitePoints] {:d} nan points have been removed.",
@@ -248,6 +305,7 @@ std::shared_ptr<PointCloud> PointCloud::SelectByIndex(
     bool has_nir = HasNIR();
     bool has_ndvi = HasNDVI();
     bool has_intensity = HasIntensity();
+    bool has_wavelengths = HasWavelengths();
 
 
     std::vector<bool> mask = std::vector<bool>(points_.size(), invert);
@@ -264,6 +322,7 @@ std::shared_ptr<PointCloud> PointCloud::SelectByIndex(
             if (has_nir) output->nir_.push_back(nir_[i]);
             if (has_ndvi) output->ndvi_.push_back(ndvi_[i]);
             if (has_intensity) output->intensity_.push_back(intensity_[i]);
+            if (has_wavelengths) output->wavelengths_.push_back(wavelengths_[i]);
         }
     }
     utility::LogDebug(
@@ -300,6 +359,10 @@ public:
         if (cloud.HasIntensity()) {
             intensity_ += cloud.intensity_[index];
         }
+        if (cloud.HasWavelengths()) {
+            wavelengths_ += cloud.wavelengths_[index];
+        }
+
         num_of_points_++;
     }
 
@@ -329,6 +392,7 @@ public:
     Eigen::Vector3d nir_= Eigen::Vector3d::Zero();
     Eigen::Vector3d ndvi_= Eigen::Vector3d::Zero();
     Eigen::Vector3d intensity_= Eigen::Vector3d::Zero();
+    Eigen::Vector4d wavelengths_ = Eigen::Vector4d::Zero();
 };
 
 class point_cubic_id {
@@ -400,6 +464,19 @@ public:
                 intensity_ += cloud.intensity_[index];
             }
         }
+
+        if (cloud.HasWavelengths()) {
+            if (approximate_class) {
+                auto got = classes.find(int(cloud.wavelengths_[index][0]));
+                if (got == classes.end())
+                    classes[int(cloud.wavelengths_[index][0])] = 1;
+                else
+                    classes[int(cloud.wavelengths_[index][0])] += 1;
+            } else {
+                wavelengths_ += cloud.wavelengths_[index];
+            }
+        }
+
 
         point_cubic_id new_id;
         new_id.point_id = index;

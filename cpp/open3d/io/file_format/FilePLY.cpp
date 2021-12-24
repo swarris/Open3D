@@ -59,6 +59,8 @@ struct PLYReaderState {
     long ndvi_num;
     long intensity_index;
     long intensity_num;
+    long wavelength_index;
+    long wavelength_num;
 };
 
 int ReadVertexCallback(p_ply_argument argument) {
@@ -170,6 +172,26 @@ int ReadIntensityCallback(p_ply_argument argument) {
     return 1;
 }
 
+int ReadWavelengthCallback(p_ply_argument argument) {
+    PLYReaderState *state_ptr;
+    long index;
+    ply_get_argument_user_data(argument, reinterpret_cast<void **>(&state_ptr),
+                               &index);
+    if (state_ptr->wavelength_index >= state_ptr->wavelength_num) {
+        return 0;
+    }
+
+    double value = ply_get_argument_value(argument);
+    state_ptr->pointcloud_ptr->wavelengths_[state_ptr->wavelength_index](index) =
+            value;
+    if (index == 3) {  // reading 'nir'
+        state_ptr->wavelength_index++;
+    }
+    return 1;
+}
+
+
+
 
 }  // namespace ply_pointcloud_reader
 
@@ -188,12 +210,6 @@ struct PLYReaderState {
     long face_index;
     long face_num;
 
-    long nir_index;
-    long nir_num;
-    long ndvi_index;
-    long ndvi_num;
-    long intensity_index;
-    long intensity_num;
 
 };
 
@@ -294,13 +310,6 @@ struct PLYReaderState {
     long color_index;
     long color_num;
 
-    long nir_index;
-    long nir_num;
-    long ndvi_index;
-    long ndvi_num;
-    long intensity_index;
-    long intensity_num;
-
 };
 
 int ReadVertexCallback(p_ply_argument argument) {
@@ -371,12 +380,6 @@ struct PLYReaderState {
     long voxel_num;
     long color_index;
     long color_num;
-    long nir_index;
-    long nir_num;
-    long ndvi_index;
-    long ndvi_num;
-    long intensity_index;
-    long intensity_num;
 
 };
 
@@ -519,6 +522,16 @@ bool ReadPointCloudFromPLY(const std::string &filename,
     state.intensity_num = ply_set_read_cb(ply_file, "vertex", "intensity",
                                       ReadIntensityCallback, &state, 0);
 
+    state.wavelength_num = ply_set_read_cb(ply_file, "vertex", "wvl1",
+                                      ReadWavelengthCallback, &state, 0);
+    ply_set_read_cb(ply_file, "vertex", "wvl2",
+                                      ReadWavelengthCallback, &state, 1);
+    ply_set_read_cb(ply_file, "vertex", "wvl3",
+                                      ReadWavelengthCallback, &state, 2);
+    ply_set_read_cb(ply_file, "vertex", "wvl4",
+                                      ReadWavelengthCallback, &state, 3);
+
+
     if (state.vertex_num <= 0) {
         utility::LogWarning("Read PLY failed: number of vertex <= 0.");
         ply_close(ply_file);
@@ -531,6 +544,7 @@ bool ReadPointCloudFromPLY(const std::string &filename,
     state.nir_index = 0;
     state.ndvi_index = 0;
     state.intensity_index = 0;
+    state.wavelength_index = 0;
 
     pointcloud.Clear();
 
@@ -541,6 +555,7 @@ bool ReadPointCloudFromPLY(const std::string &filename,
     pointcloud.nir_.resize(state.nir_num);
     pointcloud.ndvi_.resize(state.ndvi_num);
     pointcloud.intensity_.resize(state.intensity_num);
+    pointcloud.wavelengths_.resize(state.wavelength_num);
 
 
     utility::CountingProgressReporter reporter(params.update_progress);
@@ -1002,9 +1017,6 @@ bool ReadVoxelGridFromPLY(const std::string &filename,
 
     state.voxel_index = 0;
     state.color_index = 0;
-    state.nir_index = 0;
-    state.ndvi_index = 0;
-    state.intensity_index = 0;
 
     voxelgrid_ptr.clear();
     voxelgrid_ptr.resize(state.voxel_num);

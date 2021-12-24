@@ -110,6 +110,10 @@ public:
         return intensity_.size() > 0 && intensity_.size() == points_.size();
     }
 
+    /// Returns `true` if the point cloud contains intensity data.
+    bool HasWavelengths() const {
+        return wavelengths_.size() > 0 && wavelengths_.size() == points_.size();
+    }
 
 
     /// Returns 'true' if the point cloud contains per-point covariance matrix.
@@ -117,7 +121,12 @@ public:
         return !points_.empty() && covariances_.size() == points_.size();
     }
 
-    void from16b() const;
+    /// Scales 16b wavelengths data to RGB + nir data
+    void wavelengthsToData();
+    /// Computes NDVI [0..1] based on wavelength data
+    void computeNDVI();
+    void colorizeNDVI();
+
 
     /// Normalize point normals to length 1.
     PointCloud &NormalizeNormals() {
@@ -439,10 +448,7 @@ public:
     std::vector<Eigen::Vector3d> nir_;
     std::vector<Eigen::Vector3d> ndvi_;
     std::vector<Eigen::Vector3d> intensity_;
-    std::vector<Eigen::Vector3d> wvl1_;
-    std::vector<Eigen::Vector3d> wvl2_;
-    std::vector<Eigen::Vector3d> wvl3_;
-    std::vector<Eigen::Vector3d> wvl4_;
+    std::vector<Eigen::Vector4d> wavelengths_;
 
 };
 
