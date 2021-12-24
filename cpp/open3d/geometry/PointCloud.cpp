@@ -57,12 +57,12 @@ PointCloud &PointCloud::Clear() {
     return *this;
 }
 
-void PointCloud::wavelengthsToData() {
+void PointCloud::wavelengthsToData(long scale) {
 	// rescale
 	std::vector<Eigen::Vector4d>scaled = wavelengths_;
 	unsigned long i = 0;
 	for (auto &wvl : scaled){
-		wvl /=  USHRT_MAX;
+		wvl /=  scale;
 		colors_[i].block<3,1>(0,0) = wvl.block(0,0,0,2);
 		nir_[i][0] = wvl[3];
 		i++;
@@ -96,10 +96,10 @@ void PointCloud::colorizeNDVI() {
 
 		ndvi_[i][0] = std::min(ndvi, 1.0/3.0) * 3.0;
 		if (ndvi >= 1.0/3.0) {
-			ndvi_[i][1] =  std::min(ndvi-(1.0/3.0), 2.0/3.0) * 3.0;
+			ndvi_[i][2] =  std::min(ndvi-(1.0/3.0), 2.0/3.0) * 3.0;
 		}
 		if (ndvi >= 2.0/3.0) {
-			ndvi_[i][2] =  std::min(ndvi-(2.0/3.0), 1.0) * 3.0;
+			ndvi_[i][1] =  std::min(ndvi-(2.0/3.0), 1.0) * 3.0;
 		}
 		i++;
 	}

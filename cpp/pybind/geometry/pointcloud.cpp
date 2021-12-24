@@ -277,7 +277,7 @@ camera. Given depth value d at (u, v) image coordinate, the corresponding 3d poi
     docstring::ClassMethodDocInject(m, "PointCloud", "has_ndvi");
     docstring::ClassMethodDocInject(m, "PointCloud", "has_intensity");
     docstring::ClassMethodDocInject(m, "PointCloud", "has_wavelengths");
-    docstring::ClassMethodDocInject(m, "PointCloud", "wavelengthsToData");
+    docstring::ClassMethodDocInject(m, "PointCloud", "wavelengthsToData", {{"scale", "Scaling factor, default USHRT_MAX"}});
     docstring::ClassMethodDocInject(m, "PointCloud", "computeNDVI");
     docstring::ClassMethodDocInject(m, "PointCloud", "colorizeNDVI");
     docstring::ClassMethodDocInject(

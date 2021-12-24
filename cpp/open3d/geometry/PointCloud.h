@@ -122,7 +122,7 @@ public:
     }
 
     /// Scales 16b wavelengths data to RGB + nir data
-    void wavelengthsToData();
+    void wavelengthsToData(long scale= USHRT_MAX);
     /// Computes NDVI [0..1] based on wavelength data
     void computeNDVI();
     void colorizeNDVI();
