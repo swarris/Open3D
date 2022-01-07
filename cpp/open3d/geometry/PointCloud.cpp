@@ -65,6 +65,9 @@ void PointCloud::wavelengthsToData(long scale) {
 		wvl /=  scale;
 		colors_[i].block<3,1>(0,0) = wvl.block(0,0,0,2);
 		nir_[i][0] = wvl[3];
+		nir_[i][1] = 0.0;
+		nir_[i][2] = 0.0;
+
 		i++;
 	}
 }
@@ -73,6 +76,8 @@ void PointCloud::computeNDVI() {
 	unsigned long i = 0;
 	for (auto &wvl : wavelengths_){
 		ndvi_[i][0] = ((wvl[3]- wvl[0])/ (wvl[3] + wvl[0]) + 1.0) / 2.0;
+		ndvi_[i][1] = 0.0;
+		ndvi_[i][2] = 0.0;
 		i++;
 	}
 
